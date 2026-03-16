@@ -78,7 +78,7 @@ To address multiple seasonal patterns, the following models were implemented:
 
 * Fourier terms + ARIMA errors
 * TBATS (Trigonometric, Box-Cox, ARMA, Trend, Seasonal)
-* Prophet (optional extension)
+* Prophet 
 
 ### 5. Model Evaluation
 
