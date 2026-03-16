@@ -1,0 +1,25 @@
+---
+title: "STA 652 Assignment One - Richel Attafuah"
+author: "Richel Attafuah"
+date: "2026-03-16"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: united
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Time series forecasting plays a critical role in understanding and predicting patterns in real-world systems. Many real-world time series exhibit complex seasonal structures, where patterns repeat at multiple time scales rather than a single periodic cycle. Traditional models such as Seasonal Autoregressive Integrated Moving Average (SARIMA) are designed to capture only one seasonal pattern, which limits their effectiveness when multiple seasonalities are present.
+
+This study investigates the forecasting of urban mobility demand using real-world bike-sharing data from New York City's Citi Bike system. Bike usage patterns are influenced by daily commuting behavior as well as weekly variations between weekdays and weekends, resulting in multiple seasonal cycles.
+
+The objectives of this analysis are threefold. First, to explore and identify the seasonal patterns present in the data. Second, to evaluate the performance of SARIMA models using both manual identification and automatic selection. Third, to compare these models with alternative approaches specifically designed to handle multiple seasonal patterns, including Fourier-based methods and TBATS models.
+
+By systematically comparing these approaches, this study aims to demonstrate the limitations of single-seasonal models and highlight the advantages of models capable of capturing multiple seasonal structures.
+
