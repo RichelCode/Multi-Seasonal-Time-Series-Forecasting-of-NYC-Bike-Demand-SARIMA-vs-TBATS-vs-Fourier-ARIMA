@@ -18,6 +18,7 @@ library(dplyr)
 library(lubridate)
 library(purrr)
 library(tidyr)
+library(ggplot2)
 ```
 
 # Introduction
@@ -139,6 +140,24 @@ nrow(bike_hourly)
 min(bike_hourly$hour)
 max(bike_hourly$hour)
 ```
+# Exploratory Data Analysis (EDA)
 
+Exploratory Data Analysis (EDA) was conducted to understand the underlying structure of the hourly bike demand time series before applying forecasting models. This step is essential in time series analysis, as it allows for the identification of key patterns such as trends, seasonal cycles, and variability in the data.
+
+In particular, the analysis focuses on detecting the presence of multiple seasonalities, which are expected in this dataset due to human mobility behavior. Hourly bike demand is likely influenced by daily commuting patterns as well as differences between weekdays and weekends. Visual inspection of the time series at different time scales enables the identification of these recurring patterns and helps determine the appropriate modeling approach.
+
+Understanding these patterns is critical, as traditional models such as SARIMA are limited in their ability to capture more than one seasonal component. Therefore, the insights gained from this exploratory analysis will guide the selection and justification of forecasting models used in subsequent sections.
+
+```{r echo=FALSE}
+ggplot(bike_hourly, aes(x = hour, y = demand)) +
+  geom_line(color = "steelblue") +
+  labs(
+    title = "Hourly Citi Bike Demand (July–September 2025)",
+    x = "Time",
+    y = "Number of Trips"
+  ) +
+  theme_minimal()
+
+```
 
 
