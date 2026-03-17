@@ -48,14 +48,14 @@ july_files <- files[grepl("202507", files)]
 july_files
 ```
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 july_data <- july_files %>%
   map_dfr(~ read_csv(.x, col_types = cols(.default = "c")))
 
 head(july_data)
 ```
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 july_hourly <- july_data %>%
   mutate(
     started_at = ymd_hms(started_at),
@@ -73,7 +73,7 @@ head(july_data)
 
 
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 aug_files <- files[grepl("202508", files)]
 
 aug_data <- aug_files %>%
@@ -94,7 +94,7 @@ aug_hourly <- aug_data %>%
 ```
 
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 sep_files <- files[grepl("202509", files)]
 
 sep_data <- sep_files %>%
@@ -114,7 +114,7 @@ sep_hourly <- sep_data %>%
 
 ```
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 
 bike_hourly <- bind_rows(july_hourly, aug_hourly, sep_hourly) %>%
   arrange(hour)
@@ -122,12 +122,12 @@ bike_hourly <- bind_rows(july_hourly, aug_hourly, sep_hourly) %>%
 ```
 
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 nrow(bike_hourly)
 min(bike_hourly$hour)
 max(bike_hourly$hour)
 ```
-```{r echo=FALSE}
+```{r echo=TRUE}
 bike_hourly <- bike_hourly %>%
   filter(
     hour >= ymd_h("2025-07-01 00"),
@@ -135,11 +135,12 @@ bike_hourly <- bike_hourly %>%
   )
 ```
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 nrow(bike_hourly)
 min(bike_hourly$hour)
 max(bike_hourly$hour)
 ```
+
 # Exploratory Data Analysis (EDA)
 
 Exploratory Data Analysis (EDA) was conducted to understand the underlying structure of the hourly bike demand time series before applying forecasting models. This step is essential in time series analysis, as it allows for the identification of key patterns such as trends, seasonal cycles, and variability in the data.
@@ -159,5 +160,62 @@ ggplot(bike_hourly, aes(x = hour, y = demand)) +
   theme_minimal()
 
 ```
+
+The full time series plot reveals clear evidence of strong seasonal structure in the hourly bike demand data. The most prominent pattern is a highly regular sequence of peaks and troughs occurring within each day, indicating a strong daily seasonal cycle. These recurring spikes are consistent with commuting behavior, where demand increases during morning and evening hours.
+
+In addition to the daily pattern, a secondary seasonal structure is visible across the weeks. The magnitude and shape of the daily peaks vary over time, suggesting differences between weekdays and weekends. This indicates the presence of a weekly seasonal cycle, where commuter-driven demand is typically higher and more structured during weekdays, while weekend usage appears more irregular.
+
+There is also a slight upward movement in overall demand from July through September, suggesting a mild increasing trend over the observed period. Furthermore, the variability in demand appears to increase with the level of the series, which indicates that the seasonal effects may be multiplicative rather than purely additive.
+
+Overall, the visual inspection confirms that the dataset exhibits multiple seasonal patterns, specifically daily and weekly cycles. This provides strong motivation for using models that can capture more than one seasonal component.
+
+
+```{r echo=FALSE}
+one_week <- bike_hourly %>%
+  filter(
+    hour >= ymd_h("2025-07-07 00"),
+    hour <= ymd_h("2025-07-13 23")
+  )
+
+ggplot(one_week, aes(x = hour, y = demand)) +
+  geom_line(color = "darkorange") +
+  labs(
+    title = "Hourly Bike Demand Over One Week",
+    x = "Time",
+    y = "Number of Trips"
+  ) +
+  theme_minimal()
+```
+
+The weekly time series plot provides a clearer view of both intra-day and inter-day seasonal patterns in bike demand. Within each day, a consistent pattern of sharp peaks and troughs is observed, confirming the presence of strong daily seasonality driven by commuting behavior.
+
+More importantly, distinct differences are visible across the days of the week. During weekdays, demand exhibits highly structured and pronounced peaks, particularly during typical commuting hours in the morning and evening. This reflects regular work-related travel patterns.
+
+In contrast, weekend demand displays a smoother and less structured profile. The peaks are generally lower and more spread out across the day, indicating a shift from commuter-driven usage to more flexible, leisure-oriented travel behavior.
+
+These differences between weekdays and weekends provide strong evidence of a weekly seasonal cycle. Combined with the daily repetition observed within each day, this confirms that the dataset exhibits multiple seasonal patterns, specifically daily and weekly cycles, which must be accounted for in the modeling process.
+
+
+
+```{r echo=FALSE,warning=FALSE}
+
+daily_pattern <- bike_hourly %>%
+  mutate(hour_of_day = hour(hour)) %>%
+  group_by(hour_of_day) %>%
+  summarise(
+    avg_demand = mean(demand),
+    .groups = "drop"
+  )
+
+ggplot(daily_pattern, aes(x = hour_of_day, y = avg_demand)) +
+  geom_line(color = "darkgreen", size = 1) +
+  labs(
+    title = "Average Hourly Bike Demand Across a Day",
+    x = "Hour of Day",
+    y = "Average Number of Trips"
+  ) +
+  theme_minimal()
+```
+
 
 
