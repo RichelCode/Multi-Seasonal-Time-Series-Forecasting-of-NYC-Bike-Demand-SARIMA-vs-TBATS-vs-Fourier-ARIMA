@@ -19,6 +19,7 @@ library(lubridate)
 library(purrr)
 library(tidyr)
 library(ggplot2)
+library(forecast)
 ```
 
 # Introduction
@@ -31,7 +32,7 @@ The objectives of this analysis are threefold. First, to explore and identify th
 
 By systematically comparing these approaches, this study aims to demonstrate the limitations of single-seasonal models and highlight the advantages of models capable of capturing multiple seasonal structures.
 
-## 1. Data Preparation
+## Data Preparation
 
 The Citi Bike dataset is provided as multiple files per month, where each file represents a portion of the full monthly data. Therefore, all files within each month were combined to reconstruct complete monthly datasets before aggregation.
 
@@ -217,5 +218,50 @@ ggplot(daily_pattern, aes(x = hour_of_day, y = avg_demand)) +
   theme_minimal()
 ```
 
+The average daily demand profile reveals a clear and consistent intra-day seasonal pattern in bike usage. Demand is lowest during the late night and early morning hours, reflecting minimal travel activity during this period.
 
+Beginning in the early morning, demand rises sharply and reaches a first peak during typical commuting hours, indicating increased usage as individuals travel to work. This is followed by a moderate decline and relative stabilization during midday, suggesting reduced mobility during working hours.
+
+A second and more pronounced peak occurs in the late afternoon and early evening, representing the highest demand of the day. This aligns with return commuting patterns, where individuals travel back from work. After this peak, demand gradually declines into the night.
+
+The presence of two distinct peaks within each day confirms a strong daily seasonal cycle driven by commuting behavior. This pattern is highly consistent across the dataset, reinforcing the importance of incorporating daily seasonality into the forecasting models.
+
+
+# SARIMA Model Identification Using ACF and PACF
+
+To model the time series using SARIMA, it is necessary to identify appropriate model parameters based on the statistical properties of the data. This process involves examining stationarity and analyzing autocorrelation structures through the Autocorrelation Function (ACF) and Partial Autocorrelation Function (PACF).
+
+Since SARIMA models assume that the input series is stationary, the data must first be transformed to remove trends and seasonal patterns. This is achieved through a combination of regular and seasonal differencing. Once stationarity is achieved, the ACF and PACF plots are used to determine suitable values for the autoregressive (AR) and moving average (MA) components, both for the non-seasonal and seasonal parts of the model.
+
+```{r echo=TRUE}
+ts_data <- ts(bike_hourly$demand, frequency = 24)
+plot(ts_data, main = "Time Series of Hourly Demand")
+```
+
+
+To remove the trend component, first-order differencing is applied. This step helps stabilize the mean of the series over time.
+
+
+```{r echo=FALSE}
+diff_1 <- diff(ts_data, differences = 1)
+plot(diff_1, main = "First Differenced Series")
+```
+
+
+Although first differencing removes the trend, the series still contains strong seasonal patterns. To address this, seasonal differencing is applied with a lag of 24, corresponding to the daily cycle. This removes the repeating daily structure and helps achieve stationarity.
+
+
+```{r echo=FALSE}
+diff_seasonal <- diff(diff_1, lag = 24)
+plot(diff_seasonal, main = "Differenced Series (d=1, D=1, s=24)")
+```
+
+After applying both regular and seasonal differencing, the resulting series is expected to be approximately stationary. The ACF and PACF plots of this transformed series are then used to identify suitable values for the AR and MA components of the SARIMA model.
+
+The ACF plot helps identify potential moving average terms, while the PACF plot provides insight into autoregressive components. Additionally, significant spikes at seasonal lags, particularly multiples of 24, indicate the presence of seasonal AR or MA terms.
+
+```{r echo=FALSE}
+acf(diff_seasonal, main = "ACF of Differenced Series")
+pacf(diff_seasonal, main = "PACF of Differenced Series")
+```
 
