@@ -70,3 +70,75 @@ july_hourly <- july_data %>%
 head(july_data)
 ```
 
+
+
+```{r echo=FALSE}
+aug_files <- files[grepl("202508", files)]
+
+aug_data <- aug_files %>%
+  map_dfr(~ read_csv(.x, col_types = cols(.default = "c")))
+
+aug_hourly <- aug_data %>%
+  mutate(
+    started_at = ymd_hms(started_at),
+    hour = floor_date(started_at, "hour")
+  ) %>%
+  count(hour, name = "demand") %>%
+  complete(
+    hour = seq(min(hour), max(hour), by = "hour"),
+    fill = list(demand = 0)
+  ) %>%
+  arrange(hour)
+
+```
+
+
+```{r echo=FALSE}
+sep_files <- files[grepl("202509", files)]
+
+sep_data <- sep_files %>%
+  map_dfr(~ read_csv(.x, col_types = cols(.default = "c")))
+
+sep_hourly <- sep_data %>%
+  mutate(
+    started_at = ymd_hms(started_at),
+    hour = floor_date(started_at, "hour")
+  ) %>%
+  count(hour, name = "demand") %>%
+  complete(
+    hour = seq(min(hour), max(hour), by = "hour"),
+    fill = list(demand = 0)
+  ) %>%
+  arrange(hour)
+
+```
+
+```{r echo=FALSE}
+
+bike_hourly <- bind_rows(july_hourly, aug_hourly, sep_hourly) %>%
+  arrange(hour)
+
+```
+
+
+```{r echo=FALSE}
+nrow(bike_hourly)
+min(bike_hourly$hour)
+max(bike_hourly$hour)
+```
+```{r echo=FALSE}
+bike_hourly <- bike_hourly %>%
+  filter(
+    hour >= ymd_h("2025-07-01 00"),
+    hour <= ymd_h("2025-09-30 23")
+  )
+```
+
+```{r echo=FALSE}
+nrow(bike_hourly)
+min(bike_hourly$hour)
+max(bike_hourly$hour)
+```
+
+
+
