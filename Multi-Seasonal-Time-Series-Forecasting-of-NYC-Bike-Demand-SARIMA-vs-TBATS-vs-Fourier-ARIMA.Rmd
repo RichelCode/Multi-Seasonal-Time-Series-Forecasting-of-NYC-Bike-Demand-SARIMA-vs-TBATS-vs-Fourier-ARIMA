@@ -247,7 +247,6 @@ diff_1 <- diff(ts_data, differences = 1)
 plot(diff_1, main = "First Differenced Series")
 ```
 
-
 Although first differencing removes the trend, the series still contains strong seasonal patterns. To address this, seasonal differencing is applied with a lag of 24, corresponding to the daily cycle. This removes the repeating daily structure and helps achieve stationarity.
 
 
@@ -263,5 +262,23 @@ The ACF plot helps identify potential moving average terms, while the PACF plot 
 ```{r echo=FALSE}
 acf(diff_seasonal, main = "ACF of Differenced Series")
 pacf(diff_seasonal, main = "PACF of Differenced Series")
+```
+After applying both first-order differencing and seasonal differencing with a lag of 24, the resulting series appears approximately stationary. The transformed series fluctuates around a constant mean with no visible trend, indicating that the differencing successfully removed both trend and daily seasonal components. This confirms the use of d = 1 and D = 1 for the SARIMA model.
+
+The ACF plot of the differenced series shows a strong spike at lag 1 followed by a gradual decay. This pattern suggests the presence of a moving average component in the model. The absence of a sharp cutoff indicates that a low-order MA term is appropriate, with q = 1 being a reasonable choice.
+
+The PACF plot exhibits a significant spike at lag 1, after which the values taper off without a clear cutoff. This behavior indicates the presence of an autoregressive component, suggesting that a first-order AR term, p = 1, is suitable for the model.
+
+Based on the observed patterns in the ACF and PACF plots, a SARIMA(1,1,1)(1,1,1)[24] model is selected as a candidate model. The non-seasonal parameters (p = 1, d = 1, q = 1) capture short-term dependencies, while the seasonal parameters (P = 1, D = 1, Q = 1) account for the daily seasonal structure with a periodicity of 24 hours.
+
+```{r echo=FALSE}
+model_manual <- Arima(
+  ts_data,
+  order = c(1,1,1),
+  seasonal = c(1,1,1)
+)
+
+summary(model_manual)
+
 ```
 
