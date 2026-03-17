@@ -11,6 +11,13 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+## Loading all libraries
+library(readr)
+library(dplyr)
+library(lubridate)
+library(purrr)
+library(tidyr)
 ```
 
 # Introduction
@@ -22,4 +29,44 @@ This study investigates the forecasting of urban mobility demand using real-worl
 The objectives of this analysis are threefold. First, to explore and identify the seasonal patterns present in the data. Second, to evaluate the performance of SARIMA models using both manual identification and automatic selection. Third, to compare these models with alternative approaches specifically designed to handle multiple seasonal patterns, including Fourier-based methods and TBATS models.
 
 By systematically comparing these approaches, this study aims to demonstrate the limitations of single-seasonal models and highlight the advantages of models capable of capturing multiple seasonal structures.
+
+## 1. Data Preparation
+
+The Citi Bike dataset is provided as multiple files per month, where each file represents a portion of the full monthly data. Therefore, all files within each month were combined to reconstruct complete monthly datasets before aggregation.
+
+Trip-level data was then converted into an hourly time series by counting the number of trips starting in each hour.
+
+
+```{r echo=TRUE}
+files <- list.files(pattern = "\\.csv$", full.names = TRUE)
+head(files)
+```
+
+```{r echo=TRUE}
+july_files <- files[grepl("202507", files)]
+july_files
+```
+
+```{r echo=FALSE}
+july_data <- july_files %>%
+  map_dfr(~ read_csv(.x, col_types = cols(.default = "c")))
+
+head(july_data)
+```
+
+```{r echo=FALSE}
+july_hourly <- july_data %>%
+  mutate(
+    started_at = ymd_hms(started_at),
+    hour = floor_date(started_at, "hour")
+  ) %>%
+  count(hour, name = "demand") %>%
+  complete(
+    hour = seq(min(hour), max(hour), by = "hour"),
+    fill = list(demand = 0)
+  ) %>%
+  arrange(hour)
+
+head(july_data)
+```
 
