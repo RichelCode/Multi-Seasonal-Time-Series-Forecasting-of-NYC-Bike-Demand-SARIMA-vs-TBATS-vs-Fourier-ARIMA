@@ -591,9 +591,10 @@ ggplot(plot_df, aes(x = time)) +
 ````
 
 
+The models were evaluated using out-of-sample forecasting performance on a held-out test set. Based on MAE and RMSE, the manually specified SARIMA model achieved the lowest error values, indicating the strongest predictive performance among the models considered.
 
+In contrast, the automatic SARIMA model, although more complex, performed slightly worse on the test set. This suggests that its higher complexity may have led to overfitting, reducing its ability to generalize effectively to unseen data.
 
+The Fourier-based ARIMA and TBATS models, while specifically designed to capture multiple seasonal patterns, produced higher forecasting errors. This may be attributed to the relatively short time span of the dataset and the presence of high-frequency variability, which these models do not fully capture. Similarly, the Prophet model successfully represented the underlying trend and seasonal components, but generated smoother forecasts that did not adequately reflect short-term fluctuations in demand.
 
-
-
-
+Overall, the results demonstrate that simpler models can outperform more complex approaches when evaluated on unseen data. This highlights the importance of out-of-sample evaluation in time series forecasting and emphasizes that effective model selection should balance model flexibility with the ability to generalize.
