@@ -282,3 +282,72 @@ summary(model_manual)
 
 ```
 
+The manually specified SARIMA(1,1,1)(1,1,1)[24] model was fitted to the differenced time series. The estimated coefficients for both non-seasonal and seasonal components are statistically significant and indicate that the model captures both short-term dependencies and daily seasonal structure.
+
+The autoregressive and moving average terms reflect strong temporal dependence in the series, while the seasonal components capture the repeating daily cycle. The model achieves a reasonable fit based on RMSE and MAE values.
+
+It is noted that the Mean Absolute Percentage Error (MAPE) is not reliable in this case due to the presence of zero demand values, which result in division by zero. Therefore, evaluation focuses on RMSE and MAE as more appropriate performance metrics.
+
+```{r echo=FALSE}
+checkresiduals(model_manual)
+```
+
+Residual diagnostics were performed to assess the adequacy of the fitted SARIMA(1,1,1)(1,1,1)[24] model. The residual time series appears to fluctuate around zero; however, periods of increased variability suggest that not all patterns in the data have been captured.
+
+The ACF plot of the residuals reveals several significant spikes, indicating the presence of remaining autocorrelation. This suggests that the model has not fully accounted for all temporal dependencies in the series.
+
+The Ljung-Box test further confirms this observation, with a p-value significantly less than 0.05. This leads to the rejection of the null hypothesis of no autocorrelation, indicating that the residuals are not white noise.
+
+Overall, these results suggest that the SARIMA model does not fully capture the underlying structure of the data. This limitation is likely due to the presence of multiple seasonal patterns, which a single-seasonal SARIMA model is not designed to handle.
+
+
+```{r echo=FALSE}
+model_auto <- auto.arima(ts_data)
+summary(model_auto)
+checkresiduals(model_auto)
+```
+
+An automatic SARIMA model was fitted using the auto.arima() function to provide a benchmark for comparison. The selected model, ARIMA(5,0,4)(2,1,0)[24] with drift, includes higher-order autoregressive and moving average terms, as well as a drift component to capture potential trends in the data.
+
+Compared to the manually specified model, the automatic model is more complex and attempts to capture additional dependencies in the time series. This results in a slight improvement in fit, as indicated by lower RMSE and MAE values.
+
+However, residual diagnostics indicate that the model is still inadequate. The residual time series shows remaining patterns, and the ACF plot reveals significant autocorrelations at several lags. The Ljung-Box test produces a p-value far below 0.05, leading to rejection of the null hypothesis of no autocorrelation.
+
+This indicates that the residuals are not white noise, meaning that the model has not fully captured the underlying structure of the data.
+
+Despite the increased complexity of the automatic SARIMA model, it still fails to adequately model the data. This suggests that the limitation is not due to parameter selection, but rather due to the structural inability of SARIMA models to capture multiple seasonal patterns simultaneously.
+
+In this dataset, both daily and weekly seasonal cycles are present. Since SARIMA can only model a single seasonal period at a time, it is unable to fully represent the multi-seasonal nature of the data. This motivates the use of alternative models specifically designed to handle multiple seasonalities.
+
+# Modeling Multiple Seasonalities
+
+## Fourier Terms with ARIMA Errors
+
+To address the limitations of SARIMA in handling multiple seasonal patterns, a Fourier-based approach combined with ARIMA errors is applied. This method extends traditional ARIMA modeling by incorporating Fourier terms as external regressors to capture complex and multiple seasonal cycles.
+
+Fourier terms are constructed using sine and cosine functions at different frequencies, allowing the model to represent periodic patterns more flexibly than standard seasonal differencing. In this case, two seasonal cycles are present in the data: a daily cycle with a period of 24 hours and a weekly cycle with a period of 168 hours.
+
+By including Fourier terms for both seasonalities, the model can simultaneously capture short-term daily fluctuations and longer-term weekly variations. The ARIMA component is then used to model any remaining temporal dependencies not explained by the seasonal terms.
+
+This approach is particularly effective for multi-seasonal time series, as it avoids the structural limitation of SARIMA models, which can only accommodate a single seasonal period.
+
+```{r echo=FALSE}
+ts_data_multi <- msts(
+  bike_hourly$demand,
+  seasonal.periods = c(24, 168)
+)
+
+fourier_terms <- fourier(ts_data_multi, K = c(3, 5))
+
+model_fourier <- auto.arima(
+  ts_data_multi,
+  xreg = fourier_terms,
+  seasonal = FALSE
+)
+
+summary(model_fourier)
+checkresiduals(model_fourier)
+```
+
+
+
