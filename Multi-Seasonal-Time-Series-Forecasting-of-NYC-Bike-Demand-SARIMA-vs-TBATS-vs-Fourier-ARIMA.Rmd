@@ -348,6 +348,32 @@ model_fourier <- auto.arima(
 summary(model_fourier)
 checkresiduals(model_fourier)
 ```
+The Fourier-based ARIMA model was implemented to capture multiple seasonal patterns present in the data. By incorporating Fourier terms corresponding to both daily and weekly cycles, the model is able to represent complex periodic behavior more flexibly than standard SARIMA models.
+
+The resulting model combines Fourier regressors with ARIMA(3,1,2) errors, allowing the seasonal components to be modeled explicitly while the ARIMA structure captures residual temporal dependencies. This represents a significant improvement in model design compared to single-seasonal approaches.
+
+However, residual diagnostics indicate that the model is still not fully adequate. The residual time series shows remaining variability patterns, and the ACF plot reveals significant autocorrelations across multiple lags. The Ljung-Box test yields a p-value far below 0.05, indicating that the residuals are not white noise.
+
+This suggests that, although the Fourier-based approach improves the representation of multiple seasonal cycles, it does not completely capture all underlying structures in the data. The remaining autocorrelation may be due to additional complexities such as non-linear patterns, changing variance, or interactions between seasonal components.
+
+Overall, the Fourier-based ARIMA model demonstrates improved flexibility compared to SARIMA, particularly in its ability to incorporate multiple seasonal cycles. However, the residual analysis indicates that further modeling approaches are required to fully capture the complexity of the time series.
+
+## TBATS Model
+
+To further address the limitations observed in both SARIMA and Fourier-based models, the TBATS model is applied. TBATS, which stands for Trigonometric, Box-Cox transformation, ARMA errors, Trend, and Seasonal components, is specifically designed to handle complex time series with multiple seasonal patterns.
+
+Unlike SARIMA, which is restricted to a single seasonal period, and Fourier-based models, which require manual specification of seasonal terms, TBATS can automatically model multiple seasonal cycles within the data. This makes it particularly suitable for the current dataset, which exhibits both daily and weekly seasonality.
+
+The TBATS model uses trigonometric representations of seasonality and can flexibly adapt to changes in amplitude and structure over time. This allows it to capture complex interactions between seasonal patterns more effectively than previous models.
+
+```{r echo=FALSE}
+
+model_tbats <- tbats(ts_data_multi)
+
+summary(model_tbats)
+
+checkresiduals(model_tbats)
+```
 
 
 
