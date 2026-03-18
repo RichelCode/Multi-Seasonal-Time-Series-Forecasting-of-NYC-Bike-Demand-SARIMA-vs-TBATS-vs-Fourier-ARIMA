@@ -20,6 +20,8 @@ library(purrr)
 library(tidyr)
 library(ggplot2)
 library(forecast)
+library(prophet)
+library(Metrics)
 ```
 
 # Introduction
@@ -375,5 +377,108 @@ summary(model_tbats)
 checkresiduals(model_tbats)
 ```
 
+The TBATS model was fitted to the time series to capture multiple seasonal patterns, including daily and weekly cycles. The model successfully identifies both seasonal components and represents them using trigonometric functions, allowing for greater flexibility compared to SARIMA and Fourier-based approaches.
+
+Despite this, residual diagnostics indicate that the model does not fully capture all patterns in the data. The residual time series shows periods of increased variability, and the ACF plot reveals significant autocorrelation across multiple lags.
+
+The Ljung-Box test confirms this observation, with a p-value far below 0.05, indicating that the residuals are not white noise. This suggests that, although TBATS improves the modeling of multiple seasonalities, it is still unable to fully account for the complex structure of the hourly bike demand series.
+
+Overall, the results highlight the difficulty of modeling high-frequency multi-seasonal data and suggest that even advanced classical models may have limitations in fully capturing all underlying patterns.
+
+
+## Prophet Model
+
+The Prophet model is applied as a final approach to modeling the time series. Prophet is a decomposable time series model that represents data as a combination of trend, seasonality, and irregular components. It is particularly well suited for handling multiple seasonal patterns and complex temporal structures.
+
+Unlike SARIMA and Fourier-based models, Prophet automatically incorporates multiple seasonalities, including daily and weekly cycles, without requiring manual specification of seasonal orders. It also models non-linear trends and can adapt to changes in the data more flexibly.
+
+In this analysis, Prophet is used to capture the combined effects of daily and weekly seasonal patterns in bike demand. Its ability to model multiple seasonalities simultaneously makes it a strong candidate for improving forecast accuracy in this dataset.
+
+```{r echo=FALSE,warning=FALSE,message=FALSE}
+prophet_data <- bike_hourly %>%
+  select(ds = hour, y = demand)
+
+model_prophet <- prophet(
+  prophet_data,
+  daily.seasonality = TRUE,
+  weekly.seasonality = TRUE
+)
+
+future <- make_future_dataframe(
+  model_prophet,
+  periods = 72,
+  freq = "hour"
+)
+
+forecast_prophet <- predict(model_prophet, future)
+
+plot(model_prophet, forecast_prophet)
+prophet_plot_components(model_prophet, forecast_prophet)
+```
+
+The Prophet model was fitted to the hourly bike demand data to capture trend and multiple seasonal patterns. The model decomposes the time series into trend, daily seasonality, and weekly seasonality components, providing a clear and interpretable representation of the underlying structure.
+
+The trend component indicates a gradual increase in bike demand over the observed period, suggesting growing usage from July through September. The weekly seasonal component reveals distinct differences between days of the week, with higher demand toward the end of the week and lower demand at the beginning.
+
+The daily seasonal component shows a clear intra-day pattern, with two peaks corresponding to commuting hours. Demand increases sharply in the morning, stabilizes during midday, and reaches its highest level in the late afternoon and early evening before declining at night.
+
+The forecast plot shows that Prophet is able to capture the overall structure and level of the data, although variability remains due to the high-frequency and complex nature of the series. Overall, Prophet provides an interpretable and flexible framework for modeling multiple seasonal patterns in the dataset.
+
+# Model Comparison
+
+```{r echo=FALSE}
+acc_manual <- forecast::accuracy(model_manual)
+acc_auto <- forecast::accuracy(model_auto)
+acc_fourier <- forecast::accuracy(model_fourier)
+acc_tbats <- forecast::accuracy(model_tbats)
+
+# SARIMA manual
+acc_manual <- accuracy(model_manual)
+
+# SARIMA auto
+acc_auto <- accuracy(model_auto)
+
+# Fourier
+acc_fourier <- accuracy(model_fourier)
+
+# TBATS
+acc_tbats <- accuracy(model_tbats)
+
+
+# Align actual and predicted values
+prophet_pred <- forecast_prophet$yhat[1:nrow(bike_hourly)]
+actual <- bike_hourly$demand
+
+mae_prophet <- mae(actual, prophet_pred)
+rmse_prophet <- rmse(actual, prophet_pred)
+```
+
+```{recho=FALSE}
+comparison_table <- data.frame(
+  Model = c(
+    "Manual SARIMA",
+    "Auto SARIMA",
+    "Fourier + ARIMA",
+    "TBATS",
+    "Prophet"
+  ),
+  MAE = c(
+    acc_manual[2, "MAE"],
+    acc_auto[2, "MAE"],
+    acc_fourier[2, "MAE"],
+    acc_tbats[2, "MAE"],
+    mae_prophet
+  ),
+  RMSE = c(
+    acc_manual[2, "RMSE"],
+    acc_auto[2, "RMSE"],
+    acc_fourier[2, "RMSE"],
+    acc_tbats[2, "RMSE"],
+    rmse_prophet
+  )
+)
+
+comparison_table
+```
 
 
