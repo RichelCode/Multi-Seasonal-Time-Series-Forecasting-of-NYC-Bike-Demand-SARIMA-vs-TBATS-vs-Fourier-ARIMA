@@ -428,21 +428,12 @@ The forecast plot shows that Prophet is able to capture the overall structure an
 
 ```{r echo=FALSE}
 acc_manual <- forecast::accuracy(model_manual)
+
 acc_auto <- forecast::accuracy(model_auto)
+
 acc_fourier <- forecast::accuracy(model_fourier)
+
 acc_tbats <- forecast::accuracy(model_tbats)
-
-# SARIMA manual
-acc_manual <- accuracy(model_manual)
-
-# SARIMA auto
-acc_auto <- accuracy(model_auto)
-
-# Fourier
-acc_fourier <- accuracy(model_fourier)
-
-# TBATS
-acc_tbats <- accuracy(model_tbats)
 
 
 # Align actual and predicted values
@@ -453,7 +444,7 @@ mae_prophet <- mae(actual, prophet_pred)
 rmse_prophet <- rmse(actual, prophet_pred)
 ```
 
-```{recho=FALSE}
+```{r echo=FALSE}
 comparison_table <- data.frame(
   Model = c(
     "Manual SARIMA",
@@ -463,17 +454,17 @@ comparison_table <- data.frame(
     "Prophet"
   ),
   MAE = c(
-    acc_manual[2, "MAE"],
-    acc_auto[2, "MAE"],
-    acc_fourier[2, "MAE"],
-    acc_tbats[2, "MAE"],
+    acc_manual[1, "MAE"],
+    acc_auto[1, "MAE"],
+    acc_fourier[1, "MAE"],
+    acc_tbats[1, "MAE"],
     mae_prophet
   ),
   RMSE = c(
-    acc_manual[2, "RMSE"],
-    acc_auto[2, "RMSE"],
-    acc_fourier[2, "RMSE"],
-    acc_tbats[2, "RMSE"],
+    acc_manual[1, "RMSE"],
+    acc_auto[1, "RMSE"],
+    acc_fourier[1, "RMSE"],
+    acc_tbats[1, "RMSE"],
     rmse_prophet
   )
 )
