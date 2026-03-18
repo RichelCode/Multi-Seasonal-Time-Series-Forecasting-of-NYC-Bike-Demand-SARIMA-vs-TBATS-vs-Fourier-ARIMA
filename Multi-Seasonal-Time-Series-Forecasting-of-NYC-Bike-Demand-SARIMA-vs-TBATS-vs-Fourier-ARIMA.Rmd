@@ -424,28 +424,117 @@ The daily seasonal component shows a clear intra-day pattern, with two peaks cor
 
 The forecast plot shows that Prophet is able to capture the overall structure and level of the data, although variability remains due to the high-frequency and complex nature of the series. Overall, Prophet provides an interpretable and flexible framework for modeling multiple seasonal patterns in the dataset.
 
-# Model Comparison
-
-```{r echo=FALSE}
-acc_manual <- forecast::accuracy(model_manual)
-
-acc_auto <- forecast::accuracy(model_auto)
-
-acc_fourier <- forecast::accuracy(model_fourier)
-
-acc_tbats <- forecast::accuracy(model_tbats)
+# Out-of-Sample Forecast Evaluation
 
 
-# Align actual and predicted values
-prophet_pred <- forecast_prophet$yhat[1:nrow(bike_hourly)]
-actual <- bike_hourly$demand
+````{r echo=FALSE, message=FALSE, warning=FALSE}
 
-mae_prophet <- mae(actual, prophet_pred)
-rmse_prophet <- rmse(actual, prophet_pred)
-```
+# --------------------------------------------------
+# Train-test split
+# --------------------------------------------------
+n <- nrow(bike_hourly)
 
-```{r echo=FALSE}
-comparison_table <- data.frame(
+# Use last 7 days (168 hours) as test set
+h <- 168
+train_size <- n - h
+
+train_df <- bike_hourly[1:train_size, ]
+test_df  <- bike_hourly[(train_size + 1):n, ]
+
+train_data <- train_df$demand
+test_data  <- test_df$demand
+
+# Time series objects
+ts_train <- ts(train_data, frequency = 24)
+ts_test  <- ts(test_data, frequency = 24)
+
+ts_train_multi <- msts(train_data, seasonal.periods = c(24, 168))
+
+# --------------------------------------------------
+#  Manual SARIMA
+# --------------------------------------------------
+model_manual_train <- Arima(
+  ts_train,
+  order = c(1, 1, 1),
+  seasonal = c(1, 1, 1)
+)
+
+fc_manual <- forecast(model_manual_train, h = h)
+
+mae_manual <- mae(test_data, as.numeric(fc_manual$mean))
+rmse_manual <- rmse(test_data, as.numeric(fc_manual$mean))
+
+# --------------------------------------------------
+#  Auto SARIMA
+# --------------------------------------------------
+model_auto_train <- auto.arima(ts_train)
+
+fc_auto <- forecast(model_auto_train, h = h)
+
+mae_auto <- mae(test_data, as.numeric(fc_auto$mean))
+rmse_auto <- rmse(test_data, as.numeric(fc_auto$mean))
+
+# --------------------------------------------------
+#  Fourier + ARIMA
+# --------------------------------------------------
+fourier_train <- fourier(ts_train_multi, K = c(3, 5))
+fourier_future <- fourier(ts_train_multi, K = c(3, 5), h = h)
+
+model_fourier_train <- auto.arima(
+  ts_train_multi,
+  xreg = fourier_train,
+  seasonal = FALSE
+)
+
+fc_fourier <- forecast(
+  model_fourier_train,
+  xreg = fourier_future,
+  h = h
+)
+
+mae_fourier <- mae(test_data, as.numeric(fc_fourier$mean))
+rmse_fourier <- rmse(test_data, as.numeric(fc_fourier$mean))
+
+# --------------------------------------------------
+# TBATS
+# --------------------------------------------------
+model_tbats_train <- tbats(ts_train_multi)
+
+fc_tbats <- forecast(model_tbats_train, h = h)
+
+mae_tbats <- mae(test_data, as.numeric(fc_tbats$mean))
+rmse_tbats <- rmse(test_data, as.numeric(fc_tbats$mean))
+
+# --------------------------------------------------
+#  Prophet
+# --------------------------------------------------
+prophet_train <- train_df %>%
+  transmute(ds = hour, y = demand)
+
+model_prophet_train <- prophet(
+  prophet_train,
+  daily.seasonality = TRUE,
+  weekly.seasonality = TRUE,
+  yearly.seasonality = FALSE
+)
+
+future_prophet <- make_future_dataframe(
+  model_prophet_train,
+  periods = h,
+  freq = "hour"
+)
+
+forecast_prophet <- predict(model_prophet_train, future_prophet)
+
+prophet_pred <- tail(forecast_prophet$yhat, h)
+
+mae_prophet <- mae(test_data, prophet_pred)
+rmse_prophet <- rmse(test_data, prophet_pred)
+
+# --------------------------------------------------
+# Comparison table
+# --------------------------------------------------
+comparison_table_test <- data.frame(
   Model = c(
     "Manual SARIMA",
     "Auto SARIMA",
@@ -454,22 +543,57 @@ comparison_table <- data.frame(
     "Prophet"
   ),
   MAE = c(
-    acc_manual[1, "MAE"],
-    acc_auto[1, "MAE"],
-    acc_fourier[1, "MAE"],
-    acc_tbats[1, "MAE"],
+    mae_manual,
+    mae_auto,
+    mae_fourier,
+    mae_tbats,
     mae_prophet
   ),
   RMSE = c(
-    acc_manual[1, "RMSE"],
-    acc_auto[1, "RMSE"],
-    acc_fourier[1, "RMSE"],
-    acc_tbats[1, "RMSE"],
+    rmse_manual,
+    rmse_auto,
+    rmse_fourier,
+    rmse_tbats,
     rmse_prophet
   )
+) %>%
+  arrange(RMSE)
+
+comparison_table_test
+
+# --------------------------------------------------
+# 8. Forecast plot against actual values
+# --------------------------------------------------
+plot_df <- data.frame(
+  time = test_df$hour,
+  Actual = test_data,
+  Manual_SARIMA = as.numeric(fc_manual$mean),
+  Auto_SARIMA = as.numeric(fc_auto$mean),
+  Fourier_ARIMA = as.numeric(fc_fourier$mean),
+  TBATS = as.numeric(fc_tbats$mean),
+  Prophet = as.numeric(prophet_pred)
 )
 
-comparison_table
-```
+library(ggplot2)
+
+ggplot(plot_df, aes(x = time)) +
+  geom_line(aes(y = Actual, colour = "Actual")) +
+  geom_line(aes(y = Auto_SARIMA, colour = "Auto SARIMA")) +
+  geom_line(aes(y = TBATS, colour = "TBATS")) +
+  geom_line(aes(y = Prophet, colour = "Prophet")) +
+  labs(
+    title = "Forecast Comparison on Test Set",
+    x = "Time",
+    y = "Hourly Bike Demand",
+    colour = "Series"
+  ) +
+  theme_minimal()``{r}
+````
+
+
+
+
+
+
 
 
